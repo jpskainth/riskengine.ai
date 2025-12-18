@@ -24,28 +24,62 @@ jobs:
           fi
           WORKFLOW_DIR="n8n-workflows/workflows"
           if [ ! -d "$WORKFLOW_DIR" ]; then
-            echo "Workflows directory not found: $WORKFLOW_DIR" >&2
-            exit 1
+            echo "Workflows directory not found, creating: $WORKFLOW_DIR"
+            mkdir -p "$WORKFLOW_DIR"
           fi
+
+          # exit early if no JSON workflow files
+          shopt -s nullglob || true
+          files=("$WORKFLOW_DIR"/*.json)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No workflow JSON files found in $WORKFLOW_DIR; nothing to deploy."
+            exit 0
+          fi
+
           failures=0
           for file in "$WORKFLOW_DIR"/*.json; do
             [ -e "$file" ] || continue
             echo "Deploying $file"
             success=0
-            for endpoint in "/rest/workflows/import" "/workflows/import" "/workflows"; do
-              url="${N8N_HOST%/}$endpoint"
-              http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$url" \
+            endpoints=("/rest/workflows/import" "/workflows/import" "/workflows")
+            for endpoint in "${endpoints[@]}"; do
+              base_url="${N8N_HOST%/}$endpoint"
+
+              echo "Trying JSON POST with Authorization: Bearer to $base_url"
+              http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$base_url" \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $N8N_API_KEY" \
                 --data-binary @"$file" || true)
               if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
-                echo "Deployed $file to $url (HTTP $http_code)"
+                echo "Deployed $file to $base_url (HTTP $http_code)"
                 success=1
                 break
-              else
-                echo "Attempt to $url returned HTTP $http_code"
               fi
+
+              echo "Trying JSON POST with X-N8N-API-KEY to $base_url"
+              http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$base_url" \
+                -H "Content-Type: application/json" \
+                -H "X-N8N-API-KEY: $N8N_API_KEY" \
+                --data-binary @"$file" || true)
+              if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+                echo "Deployed $file to $base_url (HTTP $http_code)"
+                success=1
+                break
+              fi
+
+              echo "Trying multipart/form-data upload with X-N8N-API-KEY to $base_url"
+              http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$base_url" \
+                -H "X-N8N-API-KEY: $N8N_API_KEY" \
+                -F "file=@$file" || true)
+              if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+                echo "Deployed $file to $base_url (HTTP $http_code)"
+                success=1
+                break
+              fi
+
+              echo "Attempt to $base_url returned HTTP $http_code"
             done
+
             if [ "$success" -ne 1 ]; then
               echo "Failed to deploy $file" >&2
               failures=$((failures+1))

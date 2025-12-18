@@ -10,8 +10,18 @@ WORKFLOWS_DIR="$(dirname "$0")/../workflows"
 WORKFLOWS_DIR=$(realpath "$WORKFLOWS_DIR")
 
 if [ ! -d "$WORKFLOWS_DIR" ]; then
-  echo "Workflows directory not found: $WORKFLOWS_DIR" >&2
-  exit 1
+  echo "Workflows directory not found, creating: $WORKFLOWS_DIR"
+  mkdir -p "$WORKFLOWS_DIR"
+fi
+
+# If there are no workflow files, exit cleanly
+has_files=0
+for f in "$WORKFLOWS_DIR"/*.json; do
+  [ -e "$f" ] && { has_files=1; break; }
+done
+if [ "$has_files" -eq 0 ]; then
+  echo "No workflow JSON files found in $WORKFLOWS_DIR; nothing to deploy."
+  exit 0
 fi
 
 failures=0
