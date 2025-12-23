@@ -28,23 +28,15 @@ failures=0
 for file in "$WORKFLOWS_DIR"/*.json; do
   [ -e "$file" ] || continue
   echo "Deploying $file"
-  success=0
-  for endpoint in "/rest/workflows/import" "/workflows/import" "/workflows"; do
-    url="${N8N_HOST%/}$endpoint"
-    http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$url" \
-      -H "Content-Type: application/json" \
-      -H "Authorization: Bearer $N8N_API_KEY" \
-      --data-binary @"$file" || true)
-    if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
-      echo "Deployed $file to $url (HTTP $http_code)"
-      success=1
-      break
-    else
-      echo "Attempt to $url returned HTTP $http_code"
-    fi
-  done
-  if [ "$success" -ne 1 ]; then
-    echo "Failed to deploy $file" >&2
+  url="${N8N_HOST%/}/api/v1/workflows"
+  http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$url" \
+    -H "Content-Type: application/json" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" \
+    --data-binary @"$file" || true)
+  if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+    echo "Deployed $file to $url (HTTP $http_code)"
+  else
+    echo "Failed to deploy $file to $url. HTTP $http_code" >&2
     failures=$((failures+1))
   fi
 done
