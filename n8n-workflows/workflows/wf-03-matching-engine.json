@@ -3,6 +3,7 @@
   "nodes": [],
   "connections": {},
   "active": false,
-  "versionId": "wf-03-placeholder",
-  "id": "wf-03"
+  "settings": {
+    "executionOrder": "v1"
+  }
 }
