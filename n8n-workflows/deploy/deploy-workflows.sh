@@ -29,14 +29,15 @@ for file in "$WORKFLOWS_DIR"/*.json; do
   [ -e "$file" ] || continue
   echo "Deploying $file"
   url="${N8N_HOST%/}/api/v1/workflows"
-  http_code=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$url" \
+  http_code=$(curl -sS -w "%{http_code}" -X POST "$url" \
     -H "Content-Type: application/json" \
     -H "X-N8N-API-KEY: $N8N_API_KEY" \
-    --data-binary @"$file" || true)
+    --data-binary @"$file" 2>&1)
+  
   if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
     echo "Deployed $file to $url (HTTP $http_code)"
   else
-    echo "Failed to deploy $file to $url. HTTP $http_code" >&2
+    echo "Failed to deploy $file to $url. Response: $http_code" >&2
     failures=$((failures+1))
   fi
 done
