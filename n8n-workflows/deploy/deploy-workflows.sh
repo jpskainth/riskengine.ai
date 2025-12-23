@@ -29,15 +29,28 @@ for file in "$WORKFLOWS_DIR"/*.json; do
   [ -e "$file" ] || continue
   echo "Deploying $file"
   url="${N8N_HOST%/}/api/v1/workflows"
-  http_code=$(curl -sS -w "%{http_code}" -X POST "$url" \
+  
+  # Transform workflow JSON to only include API-compatible fields
+  # The API only accepts: name, nodes, connections, settings, pinData
+  # Remove: active (read-only), versionId, meta, id, tags (additional properties)
+  transformed=$(jq '{
+    name: .name,
+    nodes: .nodes,
+    connections: .connections,
+    settings: (.settings // {executionOrder: "v1"}),
+    pinData: (.pinData // {})
+  }' "$file")
+  
+  http_code=$(echo "$transformed" | curl -sS -w "%{http_code}" -X POST "$url" \
     -H "Content-Type: application/json" \
     -H "X-N8N-API-KEY: $N8N_API_KEY" \
-    --data-binary @"$file" 2>&1)
+    --data-binary @- 2>&1)
   
-  if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
-    echo "Deployed $file to $url (HTTP $http_code)"
+  response_code="${http_code: -3}"
+  if [ "$response_code" = "200" ] || [ "$response_code" = "201" ]; then
+    echo "Deployed $file to $url (HTTP $response_code)"
   else
-    echo "Failed to deploy $file to $url. Response: $http_code" >&2
+    echo "Failed to deploy $file to $url. Response: ${http_code}" >&2
     failures=$((failures+1))
   fi
 done
