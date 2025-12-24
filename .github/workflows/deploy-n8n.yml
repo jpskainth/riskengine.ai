@@ -3,8 +3,6 @@ name: Deploy n8n workflows
 on:
   push:
     branches: [ main ]
-    paths:
-      - "n8n-workflows/workflows/**"
 
 jobs:
   deploy:
@@ -22,6 +20,6 @@ jobs:
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
           N8N_PROJECT_ID: ${{ secrets.N8N_PROJECT_ID }}
         run: |
-          for wf in workflows/**/*.json; do
-            bash scripts/deploy-workflow.sh "$wf"
+          for wf in n8n-workflows/workflows/**/*.json; do
+            bash n8n-workflows/scripts/deploy-workflow.sh "$wf"
           done
