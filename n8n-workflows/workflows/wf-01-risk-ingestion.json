@@ -2,35 +2,11 @@
   "name": "RiskEngine.ai - wf-01-risk-ingestion",
   "nodes": [
     {
-      "parameters": {
-        "multipleMethods": true,
-        "path": "3f243103-1256-4ad6-a02b-e834893cb785",
-        "options": {}
-      },
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2.1,
-      "position": [
-        -736,
-        -224
-      ],
-      "id": "c1e8c86f-8eb8-46a8-9668-acdc5b2c377e",
-      "name": "Webhook1",
-      "webhookId": "3f243103-1256-4ad6-a02b-e834893cb785",
-      "executeOnce": true,
-      "notesInFlow": true,
-      "onError": "continueErrorOutput"
-    }
-  ],
-  "pinData": {},
-  "connections": {},
-  "settings": {
-    "executionOrder": "v1"
-  },
-  "staticData": null,
-  "shared": [
-    {
-      "role": "workflow:owner",
-      "projectId": "44VO5JoWTqmtzM1F"
+      "parameters": {
+        "path": "3f243103-1256-4ad6-a02b-e834893cb785",
+        "multipleMethods": true
+      }
     }
   ]
 }

@@ -1,19 +1,27 @@
-name: Deploy workflow to self-hosted n8n
+name: Deploy n8n workflows
 
 on:
   push:
     branches: [ main ]
-  workflow_dispatch:
+    paths:
+      - "workflows/**"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
-      - name: Deploy n8n workflows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install jq
+        run: sudo apt-get install -y jq
+
+      - name: Deploy workflows
         env:
-          N8N_HOST: ${{ secrets.N8N_HOST }}
+          N8N_BASE_URL: ${{ secrets.N8N_HOST }}
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
-        run: bash n8n-workflows/deploy/deploy-workflows.sh
+          N8N_PROJECT_ID: ${{ secrets.N8N_PROJECT_ID }}
+        run: |
+          for wf in workflows/**/*.json; do
+            bash scripts/deploy-workflow.sh "$wf"
+          done
