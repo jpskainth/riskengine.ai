@@ -13,23 +13,24 @@ This CI/CD pipeline automates the deployment of n8n workflows to a self-hosted n
 ## Directory Structure
 
 ```
-n8n-workflows/
-├── workflows/                    # Workflow JSON files
-│   └── risk-engine/             # Project-specific workflows
-│       └── wf-01-risk-ingestion.json
-├── scripts/                     # Deployment scripts
-│   └── deploy-workflow.sh
-├── .github/                     # GitHub Actions workflows
+riskengine.ai-1/                     # Repository root
+├── .github/                         # GitHub Actions workflows (repository root)
 │   └── workflows/
 │       └── deploy-n8n.yml
-├── credentials/                 # Credential configurations (not deployed)
-│   ├── sendgrid.json
-│   └── sqlserver.json
-├── env/                         # Environment configurations
-│   ├── dev.env
-│   ├── staging.env
-│   └── prod.env
-└── README.md
+└── n8n-workflows/
+    ├── workflows/                   # Workflow JSON files
+    │   └── risk-engine/            # Project-specific workflows
+    │       └── wf-01-risk-ingestion.json
+    ├── scripts/                    # Deployment scripts
+    │   └── deploy-workflow.sh
+    ├── credentials/                # Credential configurations (not deployed)
+    │   ├── sendgrid.json
+    │   └── sqlserver.json
+    ├── env/                        # Environment configurations
+    │   ├── dev.env
+    │   ├── staging.env
+    │   └── prod.env
+    └── README.md
 ```
 
 ## Workflow JSON Structure
@@ -144,7 +145,7 @@ All workflows deployed successfully
 
 ### Workflow File
 
-Location: `n8n-workflows/.github/workflows/deploy-n8n.yml`
+Location: `.github/workflows/deploy-n8n.yml` (repository root)
 
 ```yaml
 name: Deploy n8n workflows
