@@ -1,19 +1,16 @@
 {
-  "name": "wf-04-policy-engine",
+  "name": "RiskEngine.ai - wf-04-policy-engine",
   "nodes": [],
   "connections": {},
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
+  "staticData": null,
+  "pinData": {},
   "shared": [
     {
-      "role": "global:owner",
-      "workflowId": "J3W6YWa3TaVQMGbp",
-      "projectId": "44VO5JoWTqmtzM1F",
-      "project": {
-        "name": "RiskEngine.ai"
-      }
+      "role": "workflow:owner",
+      "projectId": "44VO5JoWTqmtzM1F"
     }
   ]
 }

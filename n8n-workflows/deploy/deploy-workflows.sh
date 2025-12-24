@@ -27,8 +27,9 @@ fi
 failures=0
 for file in "$WORKFLOWS_DIR"/*.json; do
   [ -e "$file" ] || continue
-  echo "Deploying $file"
-  url="${N8N_HOST%/}/api/v1/workflows"
+  
+  workflow_name=$(jq -r '.name' "$file")
+  echo "Processing workflow: $workflow_name"
   
   # Transform workflow JSON to only include API-compatible fields
   # Accepted fields: name, nodes, connections, settings, staticData, pinData, shared
@@ -38,23 +39,50 @@ for file in "$WORKFLOWS_DIR"/*.json; do
     nodes: .nodes,
     connections: .connections,
     settings: (.settings // {executionOrder: "v1"}),
-    staticData: (.staticData // {}),
+    staticData: (.staticData // null),
     pinData: (.pinData // {}),
     shared: (.shared // [])
   }' "$file")
   
-  http_code=$(echo "$transformed" | curl -sS -w "%{http_code}" -X POST "$url" \
-    -H "Content-Type: application/json" \
-    -H "X-N8N-API-KEY: $N8N_API_KEY" \
-    --data-binary @- 2>&1)
+  # Check if workflow already exists by name
+  echo "Checking if workflow '$workflow_name' exists..."
+  existing_workflow=$(curl -sS -X GET "${N8N_HOST%/}/api/v1/workflows" \
+    -H "X-N8N-API-KEY: $N8N_API_KEY" | jq -r --arg name "$workflow_name" '.data[] | select(.name == $name) | .id')
   
-  response_code="${http_code: -3}"
-  if [ "$response_code" = "200" ] || [ "$response_code" = "201" ]; then
-    echo "Deployed $file to $url (HTTP $response_code)"
+  if [ -n "$existing_workflow" ]; then
+    # Update existing workflow
+    echo "Workflow exists (ID: $existing_workflow), updating..."
+    url="${N8N_HOST%/}/api/v1/workflows/$existing_workflow"
+    http_code=$(echo "$transformed" | curl -sS -w "%{http_code}" -X PUT "$url" \
+      -H "Content-Type: application/json" \
+      -H "X-N8N-API-KEY: $N8N_API_KEY" \
+      --data-binary @- 2>&1)
+    
+    response_code="${http_code: -3}"
+    if [ "$response_code" = "200" ] || [ "$response_code" = "201" ]; then
+      echo "✓ Updated workflow '$workflow_name' (HTTP $response_code)"
+    else
+      echo "✗ Failed to update workflow '$workflow_name'. Response: ${http_code}" >&2
+      failures=$((failures+1))
+    fi
   else
-    echo "Failed to deploy $file to $url. Response: ${http_code}" >&2
-    failures=$((failures+1))
+    # Create new workflow
+    echo "Workflow does not exist, creating new..."
+    url="${N8N_HOST%/}/api/v1/workflows"
+    http_code=$(echo "$transformed" | curl -sS -w "%{http_code}" -X POST "$url" \
+      -H "Content-Type: application/json" \
+      -H "X-N8N-API-KEY: $N8N_API_KEY" \
+      --data-binary @- 2>&1)
+    
+    response_code="${http_code: -3}"
+    if [ "$response_code" = "200" ] || [ "$response_code" = "201" ]; then
+      echo "✓ Created workflow '$workflow_name' (HTTP $response_code)"
+    else
+      echo "✗ Failed to create workflow '$workflow_name'. Response: ${http_code}" >&2
+      failures=$((failures+1))
+    fi
   fi
+  echo ""
 done
 
 if [ "$failures" -ne 0 ]; then

@@ -1,19 +1,16 @@
 {
-  "name": "wf-05-action-engine",
+  "name": "RiskEngine.ai - wf-05-action-engine",
   "nodes": [],
   "connections": {},
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
+  "staticData": null,
+  "pinData": {},
   "shared": [
     {
       "role": "workflow:owner",
-      "workflowId": "J3W6YWa3TaVQMGbp",
-      "projectId": "44VO5JoWTqmtzM1F",
-      "project": {
-        "name": "RiskEngine.ai"
-      }
+      "projectId": "44VO5JoWTqmtzM1F"
     }
   ]
 }

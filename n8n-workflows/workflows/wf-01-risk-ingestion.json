@@ -23,18 +23,14 @@
   ],
   "pinData": {},
   "connections": {},
-  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
+  "staticData": null,
   "shared": [
     {
-      "role": "global:owner",
-      "workflowId": "J3W6YWa3TaVQMGbp",
-      "projectId": "44VO5JoWTqmtzM1F",
-      "project": {
-        "name": "RiskEngine.ai"
-      }
+      "role": "workflow:owner",
+      "projectId": "44VO5JoWTqmtzM1F"
     }
   ]
 }
