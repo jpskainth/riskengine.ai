@@ -14,19 +14,22 @@ This CI/CD pipeline automates the deployment of n8n workflows to a self-hosted n
 
 ```
 n8n-workflows/
-├── workflows/               # Workflow JSON files
-│   ├── wf-01-risk-ingestion.json
-│   ├── wf-02-booking-ingestion.json
-│   ├── wf-03-matching-engine.json
-│   ├── wf-04-policy-engine.json
-│   └── wf-05-action-engine.json
-├── credentials/            # Credential configurations (not deployed)
-├── deploy/                 # Deployment scripts
-│   └── deploy-workflows.sh
-└── env/                    # Environment configurations
-    ├── dev.env
-    ├── staging.env
-    └── prod.env
+├── workflows/                    # Workflow JSON files
+│   └── risk-engine/             # Project-specific workflows
+│       └── wf-01-risk-ingestion.json
+├── scripts/                     # Deployment scripts
+│   └── deploy-workflow.sh
+├── .github/                     # GitHub Actions workflows
+│   └── workflows/
+│       └── deploy-n8n.yml
+├── credentials/                 # Credential configurations (not deployed)
+│   ├── sendgrid.json
+│   └── sqlserver.json
+├── env/                         # Environment configurations
+│   ├── dev.env
+│   ├── staging.env
+│   └── prod.env
+└── README.md
 ```
 
 ## Workflow JSON Structure
@@ -101,12 +104,13 @@ export N8N_API_KEY="your-api-key-here"
 ### Run Deployment
 
 ```bash
-# From project root
-bash n8n-workflows/deploy/deploy-workflows.sh
+# Deploy a single workflow
+bash n8n-workflows/scripts/deploy-workflow.sh n8n-workflows/workflows/risk-engine/wf-01-risk-ingestion.json
 
-# Or from deploy directory
-cd n8n-workflows/deploy
-./deploy-workflows.sh
+# Deploy all workflows
+for wf in n8n-workflows/workflows/**/*.json; do
+  bash n8n-workflows/scripts/deploy-workflow.sh "$wf"
+done
 ```
 
 ### Expected Output
@@ -140,17 +144,16 @@ All workflows deployed successfully
 
 ### Workflow File
 
-Location: `.github/workflows/deploy-n8n.yml`
+Location: `n8n-workflows/.github/workflows/deploy-n8n.yml`
 
 ```yaml
-name: Deploy n8n Workflows
+name: Deploy n8n workflows
 
 on:
   push:
-    branches: [main]
+    branches: [ main ]
     paths:
-      - 'n8n-workflows/workflows/**'
-  workflow_dispatch:
+      - "n8n-workflows/workflows/**"
 
 jobs:
   deploy:
@@ -159,13 +162,17 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
+        run: sudo apt-get install -y jq
       
       - name: Deploy workflows
         env:
-          N8N_HOST: ${{ secrets.N8N_HOST }}
+          N8N_BASE_URL: ${{ secrets.N8N_HOST }}
           N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
-        run: bash n8n-workflows/deploy/deploy-workflows.sh
+          N8N_PROJECT_ID: ${{ secrets.N8N_PROJECT_ID }}
+        run: |
+          for wf in n8n-workflows/workflows/**/*.json; do
+            bash n8n-workflows/scripts/deploy-workflow.sh "$wf"
+          done
 ```
 
 ## Creating New Workflows
@@ -186,12 +193,12 @@ jobs:
      shared: .shared
    }' downloaded-workflow.json > wf-XX-new-workflow.json
    ```
-4. Place in `workflows/` directory
+4. Place in `workflows/risk-engine/` directory
 5. Commit and push to trigger deployment
 
 ### Option 2: Create from Template
 
-1. Copy an existing workflow JSON from `workflows/` directory
+1. Copy an existing workflow JSON from `workflows/risk-engine/` directory
 2. Update the following fields:
    - `name` - Give it a unique name
    - `nodes` - Add your nodes with unique IDs
@@ -206,7 +213,7 @@ Use this pattern for consistency:
 
 ## Updating Existing Workflows
 
-1. Modify the workflow JSON file in `workflows/` directory
+1. Modify the workflow JSON file in `workflows/risk-engine/` directory
 2. Keep the `name` field unchanged (this is the matching key)
 3. Update `nodes`, `connections`, or other fields as needed
 4. Commit and push to trigger deployment
@@ -254,7 +261,7 @@ Ensure the `name` field matches exactly (case-sensitive). The script matches wor
 ### No workflows found
 
 Check that:
-- Workflow files are in `n8n-workflows/workflows/` directory
+- Workflow files are in `n8n-workflows/workflows/risk-engine/` directory (or other project subdirectories)
 - Files have `.json` extension
 - Files contain valid JSON
 
