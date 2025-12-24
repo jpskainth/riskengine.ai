@@ -32,9 +32,17 @@ TRANSFORMED=$(jq '{
 }' "$WORKFLOW_FILE")
 
 # Find existing workflow by name
-EXISTING_ID=$(curl -sS "$N8N_URL/api/v1/workflows" \
-  -H "X-N8N-API-KEY: $API_KEY" | \
-  jq -r --arg NAME "$NAME" '.data[]? | select(.name==$NAME) | .id')
+WORKFLOWS_RESPONSE=$(curl -sS "$N8N_URL/api/v1/workflows" \
+  -H "X-N8N-API-KEY: $API_KEY")
+
+# Check if response is valid JSON
+if ! echo "$WORKFLOWS_RESPONSE" | jq empty 2>/dev/null; then
+  echo "Error: Failed to fetch workflows. API response:" >&2
+  echo "$WORKFLOWS_RESPONSE" >&2
+  exit 1
+fi
+
+EXISTING_ID=$(echo "$WORKFLOWS_RESPONSE" | jq -r --arg NAME "$NAME" '.data[]? | select(.name==$NAME) | .id')
 
 if [ -z "$EXISTING_ID" ]; then
   echo "Creating new workflow..."
