@@ -2,9 +2,9 @@
 set -e
 
 WORKFLOW_FILE=$1
-N8N_URL=$N8N_BASE_URL
+N8N_URL=${N8N_BASE_URL:-$N8N_HOST}
 API_KEY=$N8N_API_KEY
-PROJECT_ID=$N8N_PROJECT_ID
+PROJECT_ID=${N8N_PROJECT_ID:-44VO5JoWTqmtzM1F}
 
 if [ -z "$WORKFLOW_FILE" ] || [ ! -f "$WORKFLOW_FILE" ]; then
   echo "Error: Workflow file not found: $WORKFLOW_FILE" >&2
@@ -15,6 +15,12 @@ if [ -z "$N8N_URL" ] || [ -z "$API_KEY" ]; then
   echo "Error: N8N_BASE_URL/N8N_HOST and N8N_API_KEY must be set" >&2
   exit 1
 fi
+
+# Remove trailing slash from URL
+N8N_URL="${N8N_URL%/}"
+
+echo "n8n URL: $N8N_URL"
+echo "API Endpoint: $N8N_URL/api/v1/workflows"
 
 NAME=$(jq -r '.name' "$WORKFLOW_FILE")
 
@@ -32,17 +38,28 @@ TRANSFORMED=$(jq '{
 }' "$WORKFLOW_FILE")
 
 # Find existing workflow by name
-WORKFLOWS_RESPONSE=$(curl -sS "$N8N_URL/api/v1/workflows" \
+echo "Fetching existing workflows..."
+WORKFLOWS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" "$N8N_URL/api/v1/workflows" \
   -H "X-N8N-API-KEY: $API_KEY")
 
-# Check if response is valid JSON
-if ! echo "$WORKFLOWS_RESPONSE" | jq empty 2>/dev/null; then
-  echo "Error: Failed to fetch workflows. API response:" >&2
-  echo "$WORKFLOWS_RESPONSE" >&2
+HTTP_STATUS=$(echo "$WORKFLOWS_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+RESPONSE_BODY=$(echo "$WORKFLOWS_RESPONSE" | sed '/HTTP_STATUS:/d')
+
+if [ "$HTTP_STATUS" != "200" ]; then
+  echo "Error: API returned HTTP $HTTP_STATUS" >&2
+  echo "Response: $RESPONSE_BODY" >&2
   exit 1
 fi
 
-EXISTING_ID=$(echo "$WORKFLOWS_RESPONSE" | jq -r --arg NAME "$NAME" '.data[]? | select(.name==$NAME) | .id')
+# Check if response is valid JSON
+if ! echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
+  echo "Error: API returned non-JSON response (likely HTML). Check your URL and ensure it points to the n8n API." >&2
+  echo "Expected: http://your-n8n-host:port" >&2
+  echo "Got response starting with: $(echo "$RESPONSE_BODY" | head -n 5)" >&2
+  exit 1
+fi
+
+EXISTING_ID=$(echo "$RESPONSE_BODY" | jq -r --arg NAME "$NAME" '.data[]? | select(.name==$NAME) | .id')
 
 if [ -z "$EXISTING_ID" ]; then
   echo "Creating new workflow..."
