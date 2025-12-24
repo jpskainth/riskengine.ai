@@ -30,7 +30,11 @@
   "shared": [
     {
       "role": "global:owner",
-      "projectId": "44VO5JoWTqmtzM1F"
+      "workflowId": "J3W6YWa3TaVQMGbp",
+      "projectId": "44VO5JoWTqmtzM1F",
+      "project": {
+        "name": "RiskEngine.ai"
+      }
     }
   ]
 }
