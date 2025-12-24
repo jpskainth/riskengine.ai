@@ -25,21 +25,22 @@ if [ "$has_files" -eq 0 ]; then
 fi
 
 failures=0
-for file in "$WORKFLOWS_DIR"/.json; do
+for file in "$WORKFLOWS_DIR"/*.json; do
   [ -e "$file" ] || continue
   echo "Deploying $file"
   url="${N8N_HOST%/}/api/v1/workflows"
   
   # Transform workflow JSON to only include API-compatible fields
-  # Accepted fields: name, nodes, connections, settings, staticData, pinData
-  # Remove: active (read-only), versionId, meta, id, tags, shared (internal/additional properties)
+  # Accepted fields: name, nodes, connections, settings, staticData, pinData, shared
+  # Remove: active (read-only), versionId, meta, id, tags (internal/additional properties)
   transformed=$(jq '{
     name: .name,
     nodes: .nodes,
     connections: .connections,
     settings: (.settings // {executionOrder: "v1"}),
     staticData: (.staticData // {}),
-    pinData: (.pinData // {})
+    pinData: (.pinData // {}),
+    shared: (.shared // [])
   }' "$file")
   
   http_code=$(echo "$transformed" | curl -sS -w "%{http_code}" -X POST "$url" \
