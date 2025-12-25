@@ -55,7 +55,6 @@ Each workflow JSON file must follow this structure (compatible with n8n Public A
     "executionOrder": "v1"
   },
   "staticData": null,
-  "pinData": {},
   "shared": [
     {
       "role": "workflow:owner",
@@ -75,8 +74,9 @@ Each workflow JSON file must follow this structure (compatible with n8n Public A
 ### Optional Fields
 
 - `staticData` - Static workflow data (object or null)
-- `pinData` - Pinned test data object
 - `shared` - Array of sharing configurations with role and projectId
+
+**Note**: `pinData` is NOT supported by the n8n Public API v1
 
 ### Read-Only Fields (Automatically Removed)
 

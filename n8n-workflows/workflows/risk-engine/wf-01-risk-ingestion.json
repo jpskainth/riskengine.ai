@@ -6,7 +6,15 @@
       "parameters": {
         "path": "3f243103-1256-4ad6-a02b-e834893cb785",
         "multipleMethods": true
-      }
+      },
+      "typeVersion": 2.1,
+      "position": [0, 0],
+      "id": "webhook-node-1",
+      "name": "Webhook"
     }
-  ]
+  ],
+  "connections": {},
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

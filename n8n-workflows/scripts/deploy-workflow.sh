@@ -23,17 +23,18 @@ NAME=$(jq -r '.name' "$WORKFLOW_FILE")
 echo "Deploying workflow: $NAME"
 
 # Transform workflow to API-compatible format
-# Required fields: name, nodes, connections, settings
-# Optional fields: staticData, pinData, shared
-# Read-only fields (auto-removed): id, active, createdAt, updatedAt, tags, activeVersion, versionId
+# Per n8n Public API v1 spec (additionalProperties: false):
+# Required: name, nodes, connections, settings
+# Optional: staticData, shared
+# NOT SUPPORTED: pinData (not in API schema)
+# Read-only (auto-removed): id, active, createdAt, updatedAt, tags, activeVersion, versionId
 TRANSFORMED=$(jq '{
   name: .name,
   nodes: .nodes,
-  connections: .connections,
-  settings: (.settings // {executionOrder: "v1"}),
-  staticData: .staticData,
-  pinData: (.pinData // {})
-} + if .shared then {shared: .shared} else {} end' "$WORKFLOW_FILE")
+  connections: (.connections // {}),
+  settings: (.settings // {executionOrder: "v1"})
+} + (if .staticData != null then {staticData: .staticData} else {} end)
+  + (if .shared != null and (.shared | length > 0) then {shared: .shared} else {} end)' "$WORKFLOW_FILE")
 
 # Find existing workflow by name
 echo "Checking for existing workflow..."
