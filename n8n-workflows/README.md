@@ -65,25 +65,28 @@ Each workflow JSON file must follow this structure (compatible with n8n Public A
 }
 ```
 
-### Required Fields
+### Required Fields (per n8n Public API v1 Schema)
 
 - `name` - Unique workflow name (used for matching during updates)
 - `nodes` - Array of workflow nodes
 - `connections` - Node connections object
-- `settings` - Workflow settings (must include `executionOrder`)
-- `staticData` - Static data (can be `null`)
-- `pinData` - Pinned data object
-- `shared` - Sharing configuration with role and projectId
+- `settings` - Workflow settings object
 
-### Fields Automatically Removed
+### Optional Fields
 
-The deploy script removes these fields as they are read-only or auto-generated:
-- `active` - Read-only field managed by n8n
+- `staticData` - Static workflow data (object or null)
+- `pinData` - Pinned test data object
+- `shared` - Array of sharing configurations with role and projectId
+
+### Read-Only Fields (Automatically Removed)
+
+The deploy script automatically removes these fields before API submission:
 - `id` - Auto-assigned by n8n
-- `versionId` - Auto-assigned by n8n
-- `meta` - Internal metadata
-- `tags` - Managed separately
+- `active` - Read-only, managed by n8n activation endpoints
+- `versionId` / `activeVersionId` - Auto-assigned version tracking
 - `createdAt` / `updatedAt` - Auto-managed timestamps
+- `tags` - Managed via separate tags API
+- `activeVersion` - Read-only version information
 
 ## Manual Deployment
 
@@ -226,25 +229,47 @@ The script will:
 
 ## API Endpoints Used
 
-- **GET** `/api/v1/workflows` - List all workflows (for matching)
+Based on n8n Public API v1 specification:
+
+- **GET** `/api/v1/workflows?name={workflowName}` - Query workflows by name
 - **POST** `/api/v1/workflows` - Create new workflow
 - **PUT** `/api/v1/workflows/{id}` - Update existing workflow
+- **POST** `/api/v1/workflows/{id}/activate` - Activate a workflow (optional)
+- **POST** `/api/v1/workflows/{id}/deactivate` - Deactivate a workflow (optional)
 
 ## Authentication
 
-Uses n8n Public API v1 with API Key authentication:
-- Header: `X-N8N-API-KEY: your-api-key`
-- No Bearer token required
+n8n Public API v1 uses API Key authentication:
+- **Header**: `X-N8N-API-KEY: your-api-key`
+- **Not** `Authorization: Bearer`
+
+Generate API key: n8n Settings → API → Create API Key
 
 ## Troubleshooting
 
+### Error: HTML response instead of JSON
+
+**Cause**: URL points to n8n UI instead of API endpoint
+
+**Solution**: 
+- ✅ Correct: `N8N_HOST=http://192.9.170.179:5678`
+- ❌ Wrong: `N8N_HOST=http://192.9.170.179:5678/api/v1`
+
 ### Error: "must NOT have additional properties"
 
-Your workflow JSON contains fields not accepted by the API. The deploy script automatically filters these out, but if you see this error, ensure you're using the latest version of `deploy-workflows.sh`.
+**Cause**: Workflow JSON contains fields not accepted by the API schema
+
+**Solution**: The deploy script automatically filters out read-only fields. Accepted fields:
+- Required: `name`, `nodes`, `connections`, `settings`
+- Optional: `staticData`, `pinData`, `shared`
 
 ### Error: "active is read-only"
 
-Remove the `active` field from your workflow JSON. The deploy script handles this automatically.
+**Cause**: Trying to set `active` field via create/update endpoints
+
+**Solution**: Use activation endpoints instead:
+- `POST /api/v1/workflows/{id}/activate`
+- `POST /api/v1/workflows/{id}/deactivate`
 
 ### Error: "must have required property 'settings'"
 

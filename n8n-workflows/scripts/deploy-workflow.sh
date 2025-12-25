@@ -19,27 +19,25 @@ fi
 # Remove trailing slash from URL
 N8N_URL="${N8N_URL%/}"
 
-echo "n8n URL: $N8N_URL"
-echo "API Endpoint: $N8N_URL/api/v1/workflows"
-
 NAME=$(jq -r '.name' "$WORKFLOW_FILE")
-
 echo "Deploying workflow: $NAME"
 
 # Transform workflow to API-compatible format
+# Required fields: name, nodes, connections, settings
+# Optional fields: staticData, pinData, shared
+# Read-only fields (auto-removed): id, active, createdAt, updatedAt, tags, activeVersion, versionId
 TRANSFORMED=$(jq '{
   name: .name,
   nodes: .nodes,
   connections: .connections,
   settings: (.settings // {executionOrder: "v1"}),
-  staticData: (.staticData // null),
-  pinData: (.pinData // {}),
-  shared: (.shared // [])
-}' "$WORKFLOW_FILE")
+  staticData: .staticData,
+  pinData: (.pinData // {})
+} + if .shared then {shared: .shared} else {} end' "$WORKFLOW_FILE")
 
 # Find existing workflow by name
-echo "Fetching existing workflows..."
-WORKFLOWS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" "$N8N_URL/api/v1/workflows" \
+echo "Checking for existing workflow..."
+WORKFLOWS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" "$N8N_URL/api/v1/workflows?name=$(jq -rn --arg n "$NAME" '$n|@uri')" \
   -H "X-N8N-API-KEY: $API_KEY")
 
 HTTP_STATUS=$(echo "$WORKFLOWS_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
@@ -47,44 +45,55 @@ RESPONSE_BODY=$(echo "$WORKFLOWS_RESPONSE" | sed '/HTTP_STATUS:/d')
 
 if [ "$HTTP_STATUS" != "200" ]; then
   echo "Error: API returned HTTP $HTTP_STATUS" >&2
-  echo "Response: $RESPONSE_BODY" >&2
+  echo "URL: $N8N_URL/api/v1/workflows" >&2
+  echo "Response: $RESPONSE_BODY" | head -n 10 >&2
   exit 1
 fi
 
 # Check if response is valid JSON
 if ! echo "$RESPONSE_BODY" | jq empty 2>/dev/null; then
-  echo "Error: API returned non-JSON response (likely HTML). Check your URL and ensure it points to the n8n API." >&2
-  echo "Expected: http://your-n8n-host:port" >&2
-  echo "Got response starting with: $(echo "$RESPONSE_BODY" | head -n 5)" >&2
+  echo "Error: API returned non-JSON response." >&2
+  echo "This usually means the URL is incorrect or points to the n8n UI instead of the API." >&2
+  echo "Expected URL format: http://host:port (without /api/v1)" >&2
+  echo "Current URL: $N8N_URL" >&2
   exit 1
 fi
 
-EXISTING_ID=$(echo "$RESPONSE_BODY" | jq -r --arg NAME "$NAME" '.data[]? | select(.name==$NAME) | .id')
+EXISTING_ID=$(echo "$RESPONSE_BODY" | jq -r --arg NAME "$NAME" '.data[]? | select(.name==$NAME) | .id' | head -n 1)
 
 if [ -z "$EXISTING_ID" ]; then
   echo "Creating new workflow..."
-  RESPONSE=$(echo "$TRANSFORMED" | curl -sS -X POST "$N8N_URL/api/v1/workflows" \
+  CREATE_RESPONSE=$(echo "$TRANSFORMED" | curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$N8N_URL/api/v1/workflows" \
     -H "X-N8N-API-KEY: $API_KEY" \
     -H "Content-Type: application/json" \
     --data-binary @-)
   
-  if echo "$RESPONSE" | jq -e '.id' > /dev/null 2>&1; then
-    echo "✓ Created workflow successfully"
+  CREATE_STATUS=$(echo "$CREATE_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+  CREATE_BODY=$(echo "$CREATE_RESPONSE" | sed '/HTTP_STATUS:/d')
+  
+  if [ "$CREATE_STATUS" = "200" ] || [ "$CREATE_STATUS" = "201" ]; then
+    WORKFLOW_ID=$(echo "$CREATE_BODY" | jq -r '.id')
+    echo "✓ Created workflow successfully (ID: $WORKFLOW_ID)"
   else
-    echo "✗ Failed to create workflow: $RESPONSE" >&2
+    echo "✗ Failed to create workflow (HTTP $CREATE_STATUS)" >&2
+    echo "$CREATE_BODY" | jq '.' 2>/dev/null || echo "$CREATE_BODY" >&2
     exit 1
   fi
 else
   echo "Updating existing workflow (ID: $EXISTING_ID)..."
-  RESPONSE=$(echo "$TRANSFORMED" | curl -sS -X PUT "$N8N_URL/api/v1/workflows/$EXISTING_ID" \
+  UPDATE_RESPONSE=$(echo "$TRANSFORMED" | curl -sS -w "\nHTTP_STATUS:%{http_code}" -X PUT "$N8N_URL/api/v1/workflows/$EXISTING_ID" \
     -H "X-N8N-API-KEY: $API_KEY" \
     -H "Content-Type: application/json" \
     --data-binary @-)
   
-  if echo "$RESPONSE" | jq -e '.id' > /dev/null 2>&1; then
+  UPDATE_STATUS=$(echo "$UPDATE_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+  UPDATE_BODY=$(echo "$UPDATE_RESPONSE" | sed '/HTTP_STATUS:/d')
+  
+  if [ "$UPDATE_STATUS" = "200" ]; then
     echo "✓ Updated workflow successfully"
   else
-    echo "✗ Failed to update workflow: $RESPONSE" >&2
+    echo "✗ Failed to update workflow (HTTP $UPDATE_STATUS)" >&2
+    echo "$UPDATE_BODY" | jq '.' 2>/dev/null || echo "$UPDATE_BODY" >&2
     exit 1
   fi
 fi
