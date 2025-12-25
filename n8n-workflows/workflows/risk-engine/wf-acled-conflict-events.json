@@ -1,0 +1,51 @@
+{
+  "name": "RiskEngine.ai - ACLED Conflict Events",
+  "nodes": [
+    {
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [-400, 0],
+      "parameters": {
+        "schedule": {
+          "interval": [
+            {
+              "every": 1,
+              "unit": "hours"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Fetch ACLED",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [-150, 0],
+      "parameters": {
+        "url": "https://api.acleddata.com/acled/read?limit=100",
+        "method": "GET",
+        "responseFormat": "json"
+      }
+    },
+    {
+      "name": "Normalize",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [100, 0],
+      "parameters": {
+        "functionCode": "return items[0].json.data.map(e => ({ json: { risk_type: \"conflict\", severity: e.fatalities > 0 ? 0.9 : 0.6, location: { lat: e.latitude, lon: e.longitude, radius_km: 30 }, start_time: e.event_date, end_time: null, text: `${e.event_type} - ${e.notes}`, source: \"ACLED\", external_id: e.event_id_cnty } }));"
+      }
+    }
+  ],
+  "connections": {
+    "Cron": {
+      "main": [[{ "node": "Fetch ACLED", "type": "main", "index": 0 }]]
+    },
+    "Fetch ACLED": {
+      "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "active": false
+}

@@ -1,0 +1,30 @@
+{
+  "name": "RiskEngine.ai - News Risk Detection",
+  "nodes": [
+    {
+      "name": "RSS Trigger",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [-300, 0],
+      "parameters": {
+        "url": "https://news.google.com/rss/search?q=earthquake+OR+flood+OR+attack+OR+protest+OR+cyclone+OR+fire"
+      }
+    },
+    {
+      "name": "Classify & Normalize",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "functionCode": "const keywords = [\"earthquake\",\"flood\",\"attack\",\"protest\",\"cyclone\",\"fire\"]; return items.filter(i => keywords.some(k => i.json.title.toLowerCase().includes(k))).map(i => ({ json: { risk_type: \"news\", severity: 0.5, location: { lat: null, lon: null, radius_km: 100 }, start_time: i.json.pubDate, end_time: null, text: i.json.title, source: \"NEWS_RSS\", external_id: i.json.link } }));"
+      }
+    }
+  ],
+  "connections": {
+    "RSS Trigger": {
+      "main": [[{ "node": "Classify & Normalize", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "active": false
+}

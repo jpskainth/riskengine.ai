@@ -1,0 +1,30 @@
+{
+  "name": "RiskEngine.ai - SA Fire Incidents",
+  "nodes": [
+    {
+      "name": "RSS Trigger",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [-300, 0],
+      "parameters": {
+        "url": "https://data.sa.gov.au/data/dataset/current-incidents/rss"
+      }
+    },
+    {
+      "name": "Normalize",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "functionCode": "return items.map(i => ({ json: { risk_type: \"fire\", severity: 0.7, location: { lat: i.json.lat || null, lon: i.json.lon || null, radius_km: 50 }, start_time: i.json.pubDate, end_time: null, text: i.json.title, source: \"SA_FIRE_SERVICE\", external_id: i.json.guid } }));"
+      }
+    }
+  ],
+  "connections": {
+    "RSS Trigger": {
+      "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "active": false
+}

@@ -1,0 +1,30 @@
+{
+  "name": "RiskEngine.ai - NOAA Weather Alerts",
+  "nodes": [
+    {
+      "name": "RSS Trigger",
+      "type": "n8n-nodes-base.rssFeedRead",
+      "typeVersion": 1,
+      "position": [-300, 0],
+      "parameters": {
+        "url": "https://www.weather.gov/alerts/rss"
+      }
+    },
+    {
+      "name": "Normalize",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [0, 0],
+      "parameters": {
+        "functionCode": "return items.map(i => ({ json: { risk_type: \"weather\", severity: i.json.title.includes(\"Warning\") ? 0.8 : 0.5, location: { lat: null, lon: null, radius_km: 200 }, start_time: i.json.pubDate, end_time: null, text: `${i.json.title} - ${i.json.contentSnippet}`, source: \"NOAA\", external_id: i.json.link } }));"
+      }
+    }
+  ],
+  "connections": {
+    "RSS Trigger": {
+      "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {},
+  "active": false
+}
