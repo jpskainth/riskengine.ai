@@ -11,6 +11,13 @@ if [ -z "$WORKFLOW_FILE" ] || [ ! -f "$WORKFLOW_FILE" ]; then
   exit 1
 fi
 
+# Check if file is empty or has no nodes
+NODES_COUNT=$(jq -r '.nodes | length' "$WORKFLOW_FILE" 2>/dev/null || echo "0")
+if [ "$NODES_COUNT" = "0" ] || [ "$NODES_COUNT" = "null" ]; then
+  echo "Skipping empty workflow file: $WORKFLOW_FILE"
+  exit 0
+fi
+
 if [ -z "$N8N_URL" ] || [ -z "$API_KEY" ]; then
   echo "Error: N8N_BASE_URL/N8N_HOST and N8N_API_KEY must be set" >&2
   exit 1
