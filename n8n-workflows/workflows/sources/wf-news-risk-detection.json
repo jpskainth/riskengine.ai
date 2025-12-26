@@ -27,7 +27,7 @@
       "id": "http-sink-1",
       "parameters": {
         "method": "POST",
-        "url": "http://192.9.170.179:5678/webhook/risk-sink",
+        "url": "http://192.9.170.179:5678/webhook-test/risk-sink",
         "responseFormat": "json",
         "sendBody": true,
         "bodyContentType": "application/json",
@@ -44,5 +44,5 @@
     }
   },
   "settings": {},
-  "active": true
+  "active": false
 }

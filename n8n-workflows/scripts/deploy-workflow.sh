@@ -114,4 +114,25 @@ else
     echo "$UPDATE_BODY" | jq '.' 2>/dev/null || echo "$UPDATE_BODY" >&2
     exit 1
   fi
+  WORKFLOW_ID=$EXISTING_ID
+fi
+
+# Activate workflow if marked as active in JSON
+SHOULD_ACTIVATE=$(jq -r '.active // false' "$WORKFLOW_FILE")
+if [ "$SHOULD_ACTIVATE" = "true" ]; then
+  echo "Activating workflow..."
+  ACTIVATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X PATCH "$N8N_URL/api/v1/workflows/$WORKFLOW_ID" \
+    -H "X-N8N-API-KEY: $API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"active": true}')
+  
+  ACTIVATE_STATUS=$(echo "$ACTIVATE_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
+  ACTIVATE_BODY=$(echo "$ACTIVATE_RESPONSE" | sed '/HTTP_STATUS:/d')
+  
+  if [ "$ACTIVATE_STATUS" = "200" ]; then
+    echo "✓ Activated workflow successfully"
+  else
+    echo "⚠ Failed to activate workflow (HTTP $ACTIVATE_STATUS)"
+    echo "$ACTIVATE_BODY" | jq '.' 2>/dev/null || echo "$ACTIVATE_BODY" >&2
+  fi
 fi
