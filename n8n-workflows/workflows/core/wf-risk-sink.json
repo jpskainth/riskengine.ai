@@ -69,4 +69,11 @@
     }
   ],
   "connections": {
-    "Webhook Trigger": { "main": [[{ "node": "Validate Schema", "type]()]()
+    "Webhook Trigger": { "main": [[{ "node": "Validate Schema", "type": "main", "index": 0 }]] },
+    "Validate Schema": { "main": [[{ "node": "Create Dedup Key", "type": "main", "index": 0 }]] },
+    "Create Dedup Key": { "main": [[{ "node": "Persist to Postgres", "type": "main", "index": 0 }]] },
+    "Persist to Postgres": { "main": [[{ "node": "Trigger Matching", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "active": true
+}
