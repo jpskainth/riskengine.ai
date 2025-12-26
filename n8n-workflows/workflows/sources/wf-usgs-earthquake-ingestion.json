@@ -36,6 +36,21 @@
       "parameters": {
         "functionCode": "return items[0].json.features.map(f => ({ json: { risk_type: \"earthquake\", severity: Math.min(f.properties.mag / 10, 1), location: { lat: f.geometry.coordinates[1], lon: f.geometry.coordinates[0], radius_km: Math.max(f.properties.mag * 20, 50) }, start_time: new Date(f.properties.time).toISOString(), end_time: new Date(f.properties.time + 6 * 3600 * 1000).toISOString(), text: f.properties.title, source: \"USGS\", external_id: f.id } }));"
       }
+    },
+    {
+      "name": "HTTP Request - Risk Sink",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [150, 0],
+      "id": "http-sink-1",
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.9.170.179:5678/webhook/risk-sink",
+        "responseFormat": "json",
+        "sendBody": true,
+        "bodyContentType": "application/json",
+        "body": "{\n  \"risk_type\": \"={{$json.risk_type}}\",\n  \"severity\": {{$json.severity}},\n  \"location\": {{JSON.stringify($json.location)}},\n  \"start_time\": \"={{$json.start_time}}\",\n  \"text\": \"={{$json.text}}\",\n  \"source\": \"={{$json.source}}\",\n  \"external_id\": \"={{$json.external_id}}\"\n}"
+      }
     }
   ],
   "connections": {
@@ -44,6 +59,9 @@
     },
     "Fetch Earthquakes": {
       "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    },
+    "Normalize": {
+      "main": [[{ "node": "HTTP Request - Risk Sink", "type": "main", "index": 0 }]]
     }
   },
   "settings": {},

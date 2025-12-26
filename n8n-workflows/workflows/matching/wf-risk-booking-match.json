@@ -1,0 +1,50 @@
+{
+  "name": "RiskEngine.ai - Risk Booking Match",
+  "nodes": [
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-500, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger-matching",
+        "responseMode": "lastNode",
+        "responseData": "allEntries"
+      }
+    },
+    {
+      "name": "Fetch Bookings & Risks",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [-200, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT b.booking_id, b.location, b.start_time AS booking_start, b.end_time AS booking_end, r.id AS risk_id, r.risk_type, r.severity, r.geom AS risk_geom, r.start_time AS risk_start, r.end_time AS risk_end FROM bookings b, risk_events r WHERE ST_DWithin(b.location::geography, r.geom::geography, r.radius_km*1000) AND b.start_time <= r.end_time AND b.end_time >= r.start_time;"
+      }
+    },
+    {
+      "name": "Insert Matches",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "risk_booking_matches",
+        "columns": [
+          { "name": "booking_id", "value": "={{$json[\"booking_id\"]}}" },
+          { "name": "risk_id", "value": "={{$json[\"risk_id\"]}}" },
+          { "name": "match_score", "value": "={{$json[\"severity\"]}}" },
+          { "name": "created_at", "value": "={{$now}}" }
+        ],
+        "options": { "onConflict": "ignore" }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Fetch Bookings & Risks", "type": "main", "index": 0 }]] },
+    "Fetch Bookings & Risks": { "main": [[{ "node": "Insert Matches", "type": "main", "index": 0 }]] }
+  },
+  "settings": {},
+  "active": false
+}

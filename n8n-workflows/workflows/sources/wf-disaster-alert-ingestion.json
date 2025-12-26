@@ -36,6 +36,21 @@
       "parameters": {
         "functionCode": "return items[0].json.disasters.map(d => ({ json: { risk_type: d.hazard_type || \"disaster\", severity: d.severity || 0.6, location: { lat: d.latitude, lon: d.longitude, radius_km: d.impact_radius || 100 }, start_time: d.start_date, end_time: d.end_date || null, text: d.description, source: \"PDC\", external_id: d.id } }));"
       }
+    },
+    {
+      "name": "HTTP Request - Risk Sink",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [250, 0],
+      "id": "http-sink-1",
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.9.170.179:5678/webhook/risk-sink",
+        "responseFormat": "json",
+        "sendBody": true,
+        "bodyContentType": "application/json",
+        "body": "{\n  \"risk_type\": \"={{$json.risk_type}}\",\n  \"severity\": {{$json.severity}},\n  \"location\": {{JSON.stringify($json.location)}},\n  \"start_time\": \"={{$json.start_time}}\",\n  \"text\": \"={{$json.text}}\",\n  \"source\": \"={{$json.source}}\",\n  \"external_id\": \"={{$json.external_id}}\"\n}"
+      }
     }
   ],
   "connections": {
@@ -44,6 +59,9 @@
     },
     "Fetch Disasters": {
       "main": [[{ "node": "Normalize", "type": "main", "index": 0 }]]
+    },
+    "Normalize": {
+      "main": [[{ "node": "HTTP Request - Risk Sink", "type": "main", "index": 0 }]]
     }
   },
   "settings": {},

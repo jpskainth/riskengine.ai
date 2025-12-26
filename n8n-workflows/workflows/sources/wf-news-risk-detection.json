@@ -18,11 +18,29 @@
       "parameters": {
         "functionCode": "const keywords = [\"earthquake\",\"flood\",\"attack\",\"protest\",\"cyclone\",\"fire\"]; return items.filter(i => keywords.some(k => i.json.title.toLowerCase().includes(k))).map(i => ({ json: { risk_type: \"news\", severity: 0.5, location: { lat: null, lon: null, radius_km: 100 }, start_time: i.json.pubDate, end_time: null, text: i.json.title, source: \"NEWS_RSS\", external_id: i.json.link } }));"
       }
+    },
+    {
+      "name": "HTTP Request - Risk Sink",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 2,
+      "position": [150, 0],
+      "id": "http-sink-1",
+      "parameters": {
+        "method": "POST",
+        "url": "http://192.9.170.179:5678/webhook/risk-sink",
+        "responseFormat": "json",
+        "sendBody": true,
+        "bodyContentType": "application/json",
+        "body": "{\n  \"risk_type\": \"={{$json.risk_type}}\",\n  \"severity\": {{$json.severity}},\n  \"location\": {{JSON.stringify($json.location)}},\n  \"start_time\": \"={{$json.start_time}}\",\n  \"text\": \"={{$json.text}}\",\n  \"source\": \"={{$json.source}}\",\n  \"external_id\": \"={{$json.external_id}}\"\n}"
+      }
     }
   ],
   "connections": {
     "RSS Trigger": {
       "main": [[{ "node": "Classify & Normalize", "type": "main", "index": 0 }]]
+    },
+    "Classify & Normalize": {
+      "main": [[{ "node": "HTTP Request - Risk Sink", "type": "main", "index": 0 }]]
     }
   },
   "settings": {},

@@ -1,0 +1,72 @@
+{
+  "name": "RiskEngine.ai - Risk Sink",
+  "nodes": [
+    {
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-500, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "risk-sink",
+        "responseMode": "lastNode",
+        "responseData": "allEntries",
+        "options": {}
+      }
+    },
+    {
+      "name": "Validate Schema",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [-200, 0],
+      "parameters": {
+        "functionCode": "const required = ['risk_type','severity','location','start_time','text','source','external_id'];\nfor (const item of items) {\n  for (const field of required) {\n    if (!item.json[field]) {\n      throw new Error(`Missing field: ${field}`);\n    }\n  }\n}\nreturn items;"
+      }
+    },
+    {
+      "name": "Create Dedup Key",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [100, 0],
+      "parameters": {
+        "functionCode": "const crypto = require('crypto');\nreturn items.map(i => {\n  const key = `${i.json.source}:${i.json.external_id}`;\n  i.json.dedup_key = crypto.createHash('sha256').update(key).digest('hex');\n  return i;\n});"
+      }
+    },
+    {
+      "name": "Persist to Postgres",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [400, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "risk_events",
+        "columns": [
+          { "name": "dedup_key", "value": "={{$json[\"dedup_key\"]}}" },
+          { "name": "risk_type", "value": "={{$json[\"risk_type\"]}}" },
+          { "name": "severity", "value": "={{$json[\"severity\"]}}" },
+          { "name": "geom", "value": "POINT({{$json[\"location\"].lon}} {{$json[\"location\"].lat}})" },
+          { "name": "radius_km", "value": "={{$json[\"location\"].radius_km || 50}}" },
+          { "name": "start_time", "value": "={{$json[\"start_time\"]}}" },
+          { "name": "end_time", "value": "={{$json[\"end_time\"] || null}}" },
+          { "name": "text", "value": "={{$json[\"text\"]}}" },
+          { "name": "source", "value": "={{$json[\"source\"]}}" },
+          { "name": "external_id", "value": "={{$json[\"external_id\"]}}" }
+        ],
+        "options": { "onConflict": "ignore" }
+      }
+    },
+    {
+      "name": "Trigger Matching",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [700, 0],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "trigger-matching",
+        "responseMode": "lastNode",
+        "responseData": "allEntries"
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Trigger": { "main": [[{ "node": "Validate Schema", "type]()]()
