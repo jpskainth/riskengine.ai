@@ -6,6 +6,10 @@ N8N_URL=${N8N_BASE_URL:-$N8N_HOST}
 API_KEY=$N8N_API_KEY
 PROJECT_ID=${N8N_PROJECT_ID:-44VO5JoWTqmtzM1F}
 
+echo "==========================================="
+echo "Processing file: $WORKFLOW_FILE"
+echo "==========================================="
+
 if [ -z "$WORKFLOW_FILE" ] || [ ! -f "$WORKFLOW_FILE" ]; then
   echo "Error: Workflow file not found: $WORKFLOW_FILE" >&2
   exit 1
