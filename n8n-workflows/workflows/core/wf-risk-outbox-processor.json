@@ -1,0 +1,98 @@
+{
+  "name": "RiskEngine.ai - Outbox Processor",
+  "nodes": [
+    {
+      "name": "Manual / Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-700, 0]
+    },
+    {
+      "name": "Fetch Unprocessed Outbox",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [-450, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, source, payload FROM risk_outbox WHERE processed = false ORDER BY received_at ASC LIMIT 50;"
+      }
+    },
+    {
+      "name": "Normalize Risk Event",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [-150, 0],
+      "parameters": {
+        "functionCode": "const crypto = require('crypto');\n\nreturn items.map(item => {\n  const p = item.json.payload;\n\n  // Basic normalization (extend per source later)\n  const risk = {\n    outbox_id: item.json.id,\n    risk_type: p.risk_type || p.type || 'unknown',\n    severity: p.severity || 0.5,\n    text: p.text || p.description || 'N/A',\n    source: item.json.source,\n    external_id: p.id || p.event_id || crypto.randomUUID(),\n    start_time: p.start_time || p.time || new Date().toISOString(),\n    end_time: p.end_time || null,\n    location: {\n      lat: p.location?.lat || p.lat,\n      lon: p.location?.lon || p.lon,\n      radius_km: p.location?.radius_km || 50\n    }\n  };\n\n  const dedupKey = crypto\n    .createHash('sha256')\n    .update(`${risk.source}:${risk.external_id}`)\n    .digest('hex');\n\n  return { json: { ...risk, dedup_key: dedupKey } };\n});"
+      }
+    },
+    {
+      "name": "Insert Risk Event",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [200, 0],
+      "parameters": {
+        "operation": "insert",
+        "table": "risk_events",
+        "columns": [
+          { "name": "dedup_key", "value": "={{$json.dedup_key}}" },
+          { "name": "risk_type", "value": "={{$json.risk_type}}" },
+          { "name": "severity", "value": "={{$json.severity}}" },
+          {
+            "name": "geom",
+            "value": "POINT({{$json.location.lon}} {{$json.location.lat}})"
+          },
+          { "name": "radius_km", "value": "={{$json.location.radius_km}}" },
+          { "name": "start_time", "value": "={{$json.start_time}}" },
+          { "name": "end_time", "value": "={{$json.end_time}}" },
+          { "name": "text", "value": "={{$json.text}}" },
+          { "name": "source", "value": "={{$json.source}}" },
+          { "name": "external_id", "value": "={{$json.external_id}}" }
+        ],
+        "options": {
+          "onConflict": "ignore"
+        }
+      }
+    },
+    {
+      "name": "Mark Outbox Processed",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [500, 0],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE risk_outbox SET processed = true, processed_at = now() WHERE id = {{$json.outbox_id}};"
+      }
+    },
+    {
+      "name": "Trigger Booking Match",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [800, 0],
+      "parameters": {
+        "workflowId": "wf-risk-booking-match",
+        "options": {
+          "waitForCompletion": false
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Manual / Trigger": {
+      "main": [[{ "node": "Fetch Unprocessed Outbox", "type": "main", "index": 0 }]]
+    },
+    "Fetch Unprocessed Outbox": {
+      "main": [[{ "node": "Normalize Risk Event", "type": "main", "index": 0 }]]
+    },
+    "Normalize Risk Event": {
+      "main": [[{ "node": "Insert Risk Event", "type": "main", "index": 0 }]]
+    },
+    "Insert Risk Event": {
+      "main": [[{ "node": "Mark Outbox Processed", "type": "main", "index": 0 }]]
+    },
+    "Mark Outbox Processed": {
+      "main": [[{ "node": "Trigger Booking Match", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false
+}

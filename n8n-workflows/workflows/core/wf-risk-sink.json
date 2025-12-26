@@ -1,79 +1,73 @@
 {
-  "name": "RiskEngine.ai - Risk Sink",
+  "name": "RiskEngine.ai - Risk Sink (Outbox)",
   "nodes": [
     {
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [-500, 0],
+      "position": [-600, 0],
       "parameters": {
         "httpMethod": "POST",
         "path": "risk-sink",
-        "responseMode": "lastNode",
-        "responseData": "allEntries",
+        "responseMode": "responseNode",
         "options": {}
       }
     },
     {
-      "name": "Validate Schema",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [-200, 0],
-      "parameters": {
-        "functionCode": "const required = ['risk_type','severity','location','start_time','text','source','external_id'];\nfor (const item of items) {\n  for (const field of required) {\n    if (!item.json[field]) {\n      throw new Error(`Missing field: ${field}`);\n    }\n  }\n}\nreturn items;"
-      }
-    },
-    {
-      "name": "Create Dedup Key",
-      "type": "n8n-nodes-base.function",
-      "typeVersion": 1,
-      "position": [100, 0],
-      "parameters": {
-        "functionCode": "const crypto = require('crypto');\nreturn items.map(i => {\n  const key = `${i.json.source}:${i.json.external_id}`;\n  i.json.dedup_key = crypto.createHash('sha256').update(key).digest('hex');\n  return i;\n});"
-      }
-    },
-    {
-      "name": "Persist to Postgres",
+      "name": "Persist Raw Event (Outbox)",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 1,
-      "position": [400, 0],
+      "position": [-300, 0],
       "parameters": {
         "operation": "insert",
-        "table": "risk_events",
+        "table": "risk_outbox",
         "columns": [
-          { "name": "dedup_key", "value": "={{$json[\"dedup_key\"]}}" },
-          { "name": "risk_type", "value": "={{$json[\"risk_type\"]}}" },
-          { "name": "severity", "value": "={{$json[\"severity\"]}}" },
-          { "name": "geom", "value": "POINT({{$json[\"location\"].lon}} {{$json[\"location\"].lat}})" },
-          { "name": "radius_km", "value": "={{$json[\"location\"].radius_km || 50}}" },
-          { "name": "start_time", "value": "={{$json[\"start_time\"]}}" },
-          { "name": "end_time", "value": "={{$json[\"end_time\"] || null}}" },
-          { "name": "text", "value": "={{$json[\"text\"]}}" },
-          { "name": "source", "value": "={{$json[\"source\"]}}" },
-          { "name": "external_id", "value": "={{$json[\"external_id\"]}}" }
-        ],
-        "options": { "onConflict": "ignore" }
+          {
+            "name": "source",
+            "value": "={{$headers['user-agent'] || 'unknown'}}"
+          },
+          {
+            "name": "payload",
+            "value": "={{$json}}"
+          }
+        ]
       }
     },
     {
-      "name": "Trigger Matching",
-      "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
-      "position": [700, 0],
+      "name": "Respond 200 OK",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [0, 0],
       "parameters": {
-        "httpMethod": "POST",
-        "path": "trigger-matching",
-        "responseMode": "lastNode",
-        "responseData": "allEntries"
+        "responseCode": 200,
+        "responseBody": {
+          "status": "accepted"
+        }
+      }
+    },
+    {
+      "name": "Trigger Async Processor",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1,
+      "position": [300, 0],
+      "parameters": {
+        "workflowId": "wf-risk-outbox-processor",
+        "options": {
+          "waitForCompletion": false
+        }
       }
     }
   ],
   "connections": {
-    "Webhook Trigger": { "main": [[{ "node": "Validate Schema", "type": "main", "index": 0 }]] },
-    "Validate Schema": { "main": [[{ "node": "Create Dedup Key", "type": "main", "index": 0 }]] },
-    "Create Dedup Key": { "main": [[{ "node": "Persist to Postgres", "type": "main", "index": 0 }]] },
-    "Persist to Postgres": { "main": [[{ "node": "Trigger Matching", "type": "main", "index": 0 }]] }
+    "Webhook Trigger": {
+      "main": [[{ "node": "Persist Raw Event (Outbox)", "type": "main", "index": 0 }]]
+    },
+    "Persist Raw Event (Outbox)": {
+      "main": [
+        [{ "node": "Respond 200 OK", "type": "main", "index": 0 }],
+        [{ "node": "Trigger Async Processor", "type": "main", "index": 1 }]
+      ]
+    }
   },
-  "settings": {},
-  "active": true
+  "active": false
 }
