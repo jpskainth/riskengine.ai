@@ -121,10 +121,10 @@ fi
 SHOULD_ACTIVATE=$(jq -r '.active // false' "$WORKFLOW_FILE")
 if [ "$SHOULD_ACTIVATE" = "true" ]; then
   echo "Activating workflow..."
-  ACTIVATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X PATCH "$N8N_URL/api/v1/workflows/$WORKFLOW_ID" \
+  ACTIVATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$N8N_URL/api/v1/workflows/$WORKFLOW_ID/activate" \
     -H "X-N8N-API-KEY: $API_KEY" \
     -H "Content-Type: application/json" \
-    -d '{"active": true}')
+    -d '{}')
   
   ACTIVATE_STATUS=$(echo "$ACTIVATE_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
   ACTIVATE_BODY=$(echo "$ACTIVATE_RESPONSE" | sed '/HTTP_STATUS:/d')
