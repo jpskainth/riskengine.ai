@@ -15,10 +15,16 @@ if [ -z "$WORKFLOW_FILE" ] || [ ! -f "$WORKFLOW_FILE" ]; then
   exit 1
 fi
 
-# Check if file is empty or has no nodes
-NODES_COUNT=$(jq -r '.nodes | length' "$WORKFLOW_FILE" 2>/dev/null || echo "0")
-if [ "$NODES_COUNT" = "0" ] || [ "$NODES_COUNT" = "null" ]; then
-  echo "Skipping empty workflow file: $WORKFLOW_FILE"
+# Check if file is valid JSON
+if ! jq empty "$WORKFLOW_FILE" 2>/dev/null; then
+  echo "⚠ Skipping invalid JSON file: $WORKFLOW_FILE"
+  exit 0
+fi
+
+# Check if file has no nodes
+NODES_COUNT=$(jq '.nodes | length' "$WORKFLOW_FILE" 2>/dev/null)
+if [ -z "$NODES_COUNT" ] || [ "$NODES_COUNT" = "0" ] || [ "$NODES_COUNT" = "null" ]; then
+  echo "⚠ Skipping workflow with no nodes: $WORKFLOW_FILE"
   exit 0
 fi
 
