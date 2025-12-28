@@ -34,21 +34,24 @@
       "parameters": {
         "operation": "insert",
         "table": "risk_events",
-        "columns": [
-          { "name": "dedup_key", "value": "={{$json.dedup_key}}" },
-          { "name": "risk_type", "value": "={{$json.risk_type}}" },
-          { "name": "severity", "value": "={{$json.severity}}" },
-          {
-            "name": "geom",
-            "value": "POINT({{$json.location.lon}} {{$json.location.lat}})"
-          },
-          { "name": "radius_km", "value": "={{$json.location.radius_km}}" },
-          { "name": "start_time", "value": "={{$json.start_time}}" },
-          { "name": "end_time", "value": "={{$json.end_time}}" },
-          { "name": "text", "value": "={{$json.text}}" },
-          { "name": "source", "value": "={{$json.source}}" },
-          { "name": "external_id", "value": "={{$json.external_id}}" }
-        ],
+        "columns": "dedup_key,risk_type,severity,geom,radius_km,start_time,end_time,text,source,external_id",
+        "columnsUi": {
+          "column": [
+            { "name": "dedup_key", "value": "={{$json.dedup_key}}" },
+            { "name": "risk_type", "value": "={{$json.risk_type}}" },
+            { "name": "severity", "value": "={{$json.severity}}" },
+            {
+              "name": "geom",
+              "value": "POINT({{$json.location.lon}} {{$json.location.lat}})"
+            },
+            { "name": "radius_km", "value": "={{$json.location.radius_km}}" },
+            { "name": "start_time", "value": "={{$json.start_time}}" },
+            { "name": "end_time", "value": "={{$json.end_time}}" },
+            { "name": "text", "value": "={{$json.text}}" },
+            { "name": "source", "value": "={{$json.source}}" },
+            { "name": "external_id", "value": "={{$json.external_id}}" }
+          ]
+        },
         "options": {
           "onConflict": "ignore"
         }
@@ -94,5 +97,6 @@
       "main": [[{ "node": "Trigger Booking Match", "type": "main", "index": 0 }]]
     }
   },
-  "active": false
+  "settings": {},
+  "active": true
 }
