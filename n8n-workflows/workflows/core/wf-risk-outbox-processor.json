@@ -22,6 +22,12 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 1,
       "position": [-450, 0],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred",
+          "name": "Postgres account"
+        }
+      },
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT id, source, payload FROM risk_outbox WHERE processed = false ORDER BY received_at ASC LIMIT 50;"
@@ -41,6 +47,12 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 1,
       "position": [200, 0],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred",
+          "name": "Postgres account"
+        }
+      },
       "parameters": {
         "operation": "insert",
         "table": "risk_events",
@@ -72,6 +84,12 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 1,
       "position": [500, 0],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred",
+          "name": "Postgres account"
+        }
+      },
       "parameters": {
         "operation": "executeQuery",
         "query": "UPDATE risk_outbox SET processed = true, processed_at = now() WHERE id = {{$json.outbox_id}};"
