@@ -2,10 +2,21 @@
   "name": "RiskEngine.ai - Outbox Processor",
   "nodes": [
     {
-      "name": "Manual / Trigger",
-      "type": "n8n-nodes-base.manualTrigger",
+      "name": "Cron Trigger",
+      "type": "n8n-nodes-base.cron",
       "typeVersion": 1,
-      "position": [-700, 0]
+      "position": [-700, 0],
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "mode": "everyX",
+              "value": 30,
+              "unit": "seconds"
+            }
+          ]
+        }
+      }
     },
     {
       "name": "Fetch Unprocessed Outbox",
@@ -81,7 +92,7 @@
     }
   ],
   "connections": {
-    "Manual / Trigger": {
+    "Cron Trigger": {
       "main": [[{ "node": "Fetch Unprocessed Outbox", "type": "main", "index": 0 }]]
     },
     "Fetch Unprocessed Outbox": {
