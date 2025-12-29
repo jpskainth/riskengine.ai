@@ -56,7 +56,6 @@
       "parameters": {
         "operation": "insert",
         "table": "risk_events",
-        "columns": "dedup_key,risk_type,severity,geom,radius_km,start_time,end_time,text,source,external_id",
         "columnsUi": {
           "column": [
             { "name": "dedup_key", "value": "={{$json.dedup_key}}" },
