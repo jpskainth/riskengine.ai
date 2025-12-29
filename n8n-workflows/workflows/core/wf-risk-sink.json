@@ -18,19 +18,27 @@
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 1,
       "position": [-300, 0],
+      "credentials": {
+        "postgres": {
+          "id": "postgres-cred",
+          "name": "Postgres account"
+        }
+      },
       "parameters": {
         "operation": "insert",
         "table": "risk_outbox",
-        "columns": [
-          {
-            "name": "source",
-            "value": "={{$headers['user-agent'] || 'unknown'}}"
-          },
-          {
-            "name": "payload",
-            "value": "={{$json}}"
-          }
-        ]
+        "columnsUi": {
+          "column": [
+            {
+              "name": "source",
+              "value": "={{$json.source || 'webhook'}}"
+            },
+            {
+              "name": "payload",
+              "value": "={{JSON.stringify($json)}}"
+            }
+          ]
+        }
       }
     },
     {
@@ -39,10 +47,11 @@
       "typeVersion": 1,
       "position": [0, 0],
       "parameters": {
-        "responseCode": 200,
-        "responseBody": {
-          "status": "accepted"
-        }
+        "options": {
+          "responseCode": 200
+        },
+        "respondWith": "json",
+        "responseBody": "={\"status\": \"accepted\", \"message\": \"Risk event queued for processing\"}"
       }
     },
     {
@@ -69,5 +78,6 @@
       ]
     }
   },
+  "settings": {},
   "active": false
 }
