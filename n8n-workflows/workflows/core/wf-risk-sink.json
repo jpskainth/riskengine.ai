@@ -73,8 +73,10 @@
     },
     "Persist Raw Event (Outbox)": {
       "main": [
-        [{ "node": "Respond 200 OK", "type": "main", "index": 0 }],
-        [{ "node": "Trigger Async Processor", "type": "main", "index": 1 }]
+        [
+          { "node": "Respond 200 OK", "type": "main", "index": 0 },
+          { "node": "Trigger Async Processor", "type": "main", "index": 0 }
+        ]
       ]
     }
   },

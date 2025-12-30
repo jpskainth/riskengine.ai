@@ -47,38 +47,9 @@
         "method": "POST",
         "url": "http://192.9.170.179:5678/webhook/risk-sink",
         "sendBody": true,
-        "bodyParametersUi": {
-          "parameter": [
-            {
-              "name": "risk_type",
-              "value": "={{$json.risk_type}}"
-            },
-            {
-              "name": "severity",
-              "value": "={{$json.severity}}"
-            },
-            {
-              "name": "location",
-              "value": "={{JSON.stringify($json.location)}}"
-            },
-            {
-              "name": "start_time",
-              "value": "={{$json.start_time}}"
-            },
-            {
-              "name": "text",
-              "value": "={{$json.text}}"
-            },
-            {
-              "name": "source",
-              "value": "={{$json.source}}"
-            },
-            {
-              "name": "external_id",
-              "value": "={{$json.external_id}}"
-            }
-          ]
-        }
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
       }
     }
   ],
