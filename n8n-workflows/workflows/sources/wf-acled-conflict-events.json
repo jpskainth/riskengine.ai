@@ -47,8 +47,11 @@
         "url": "http://192.9.170.179:5678/webhook/risk-sink",
         "requestMethod": "POST",
         "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
+        "contentType": "json",
+        "body": {
+          "mode": "raw",
+          "raw": "={{ JSON.stringify($json) }}"
+        },
         "options": {}
       }
     }
@@ -65,5 +68,5 @@
     }
   },
   "settings": {},
-  "active": false
+  "active": true
 }
