@@ -45,9 +45,11 @@
       "parameters": {
         "method": "POST",
         "url": "http://192.9.170.179:5678/webhook/risk-sink",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
         "sendBody": true,
         "contentType": "json",
-        "jsonBody": "={{ JSON.stringify($json) }}",
+        "body": "={{ $json }}",
         "options": {}
       }
     }
