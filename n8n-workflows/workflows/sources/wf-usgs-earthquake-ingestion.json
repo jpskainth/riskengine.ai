@@ -20,12 +20,11 @@
     {
       "name": "Fetch Earthquakes",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "typeVersion": 4.3,
       "position": [-250, 0],
       "parameters": {
         "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson",
-        "method": "GET",
-        "responseFormat": "json"
+        "method": "GET"
       }
     },
     {
@@ -40,14 +39,14 @@
     {
       "name": "HTTP Request - Risk Sink",
       "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "typeVersion": 4.3,
       "position": [160, 0],
       "id": "http-sink-1",
       "parameters": {
-        "url": "http://192.9.170.179:5678/webhook/risk-sink",
         "method": "POST",
+        "url": "http://192.9.170.179:5678/webhook/risk-sink",
         "sendBody": true,
-        "specifyBody": "json",
+        "contentType": "json",
         "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {}
       }
