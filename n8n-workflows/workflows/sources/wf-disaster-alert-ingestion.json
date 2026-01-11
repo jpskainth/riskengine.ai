@@ -44,14 +44,11 @@
       "position": [250, 0],
       "id": "http-sink-1",
       "parameters": {
+        "method": "POST",
         "url": "http://192.9.170.179:5678/webhook/risk-sink",
-        "requestMethod": "POST",
         "sendBody": true,
-        "contentType": "json",
-        "body": {
-          "mode": "raw",
-          "raw": "={{ JSON.stringify($json) }}"
-        },
+        "bodyContentType": "application/json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
         "options": {}
       }
     }

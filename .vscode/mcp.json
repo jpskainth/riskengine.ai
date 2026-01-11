@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "n8n-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "supergateway",
+        "--streamableHttp",
+        "http://192.9.170.179:5678/mcp-server/http",
+        "--header",
+        "authorization:Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3MzlhMzAzNS00ZGJjLTRjNGItYmIwOC1mYTEyZGIwNjdlZDkiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6ImI1MGIxMzg5LTFhNGEtNGZiYy1hMjYwLTdkOGFiYWM0MTM4NiIsImlhdCI6MTc2ODEzNTYzMX0.clztA_A0mFDQa3ZMhk7XjZ8qkjVySk0RM85T8B1L-uE"
+      ]
+    }
+  }
+}

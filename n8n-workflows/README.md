@@ -1,6 +1,31 @@
 # n8n Workflow CI/CD Pipeline
 
-This CI/CD pipeline automates the deployment of n8n workflows to a self-hosted n8n instance. It supports both creating new workflows and updating existing ones.
+This CI/CD pipeline automates the deployment of n8n workflows to a self-hosted n8n instance (version 1.123.5).
+
+## ⚠️ Critical Configuration for n8n 1.123.5
+
+### HTTP Request Node (typeVersion 2)
+**MUST use these exact parameters:**
+```json
+{
+  "type": "n8n-nodes-base.httpRequest",
+  "typeVersion": 2,
+  "parameters": {
+    "method": "POST",           // NOT "requestMethod"
+    "url": "...",
+    "sendBody": true,
+    "bodyContentType": "application/json",  // NOT "contentType"
+    "jsonBody": "={{ JSON.stringify($json) }}",  // NOT "body.raw"
+    "options": {}
+  }
+}
+```
+
+**Common Mistakes to Avoid:**
+- ❌ `"requestMethod": "POST"` → ✅ `"method": "POST"`
+- ❌ `"contentType": "json"` → ✅ `"bodyContentType": "application/json"`
+- ❌ `"body": {"mode": "raw"}` → ✅ `"jsonBody": "..."`
+- ❌ `typeVersion: 4.3` → ✅ `typeVersion: 2`
 
 ## Features
 
