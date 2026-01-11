@@ -4,7 +4,7 @@
     {
       "name": "Webhook Trigger",
       "type": "n8n-nodes-base.webhook",
-      "typeVersion": 2,
+      "typeVersion": 2.1,
       "position": [-600, 0],
       "parameters": {
         "httpMethod": "POST",
