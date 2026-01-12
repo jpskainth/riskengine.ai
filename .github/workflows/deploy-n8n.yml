@@ -17,7 +17,7 @@ jobs:
       - name: Deploy workflows
         env:
           N8N_BASE_URL: ${{ secrets.N8N_HOST }}
-          N8N_API_KEY: ${{ secrets.N8N_API_KEY }}
+          MCP_BEARER_TOKEN: ${{ secrets.MCP_BEARER_TOKEN }}
           N8N_PROJECT_ID: ${{ secrets.N8N_PROJECT_ID }}
         run: |
           for wf in n8n-workflows/workflows/**/*.json; do
