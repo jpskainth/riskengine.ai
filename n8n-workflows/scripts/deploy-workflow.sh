@@ -3,7 +3,7 @@ set -e
 
 WORKFLOW_FILE=$1
 N8N_URL=${N8N_BASE_URL:-$N8N_HOST}
-API_KEY=$N8N_API_KEY
+MCP_BEARER_TOKEN=${MCP_BEARER_TOKEN:-$N8N_MCP_BEARER_TOKEN}
 PROJECT_ID=${N8N_PROJECT_ID:-44VO5JoWTqmtzM1F}
 
 echo "==========================================="
@@ -33,8 +33,16 @@ if [ -z "$N8N_URL" ] || [ -z "$API_KEY" ]; then
   exit 1
 fi
 
+
 # Remove trailing slash from URL
 N8N_URL="${N8N_URL%/}"
+
+# Use MCP endpoint if specified
+if [[ "$N8N_URL" == *mcp-server* ]]; then
+  API_URL="$N8N_URL"
+else
+  API_URL="$N8N_URL/mcp-server/http"
+fi
 
 NAME=$(jq -r '.name' "$WORKFLOW_FILE")
 echo "Deploying workflow: $NAME"
@@ -53,10 +61,11 @@ TRANSFORMED=$(jq '{
 } + (if .staticData != null then {staticData: .staticData} else {} end)
   + (if .shared != null and (.shared | length > 0) then {shared: .shared} else {} end)' "$WORKFLOW_FILE")
 
-# Find existing workflow by name
+
+# Find existing workflow by name (MCP)
 echo "Checking for existing workflow..."
-WORKFLOWS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" "$N8N_URL/api/v1/workflows?name=$(jq -rn --arg n "$NAME" '$n|@uri')" \
-  -H "X-N8N-API-KEY: $API_KEY")
+WORKFLOWS_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" "$API_URL/workflows?name=$(jq -rn --arg n "$NAME" '$n|@uri')" \
+  -H "Authorization: Bearer $MCP_BEARER_TOKEN")
 
 HTTP_STATUS=$(echo "$WORKFLOWS_RESPONSE" | grep "HTTP_STATUS:" | cut -d: -f2)
 RESPONSE_BODY=$(echo "$WORKFLOWS_RESPONSE" | sed '/HTTP_STATUS:/d')
@@ -81,8 +90,8 @@ EXISTING_ID=$(echo "$RESPONSE_BODY" | jq -r --arg NAME "$NAME" '.data[]? | selec
 
 if [ -z "$EXISTING_ID" ]; then
   echo "Creating new workflow..."
-  CREATE_RESPONSE=$(echo "$TRANSFORMED" | curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$N8N_URL/api/v1/workflows" \
-    -H "X-N8N-API-KEY: $API_KEY" \
+  CREATE_RESPONSE=$(echo "$TRANSFORMED" | curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$API_URL/workflows" \
+    -H "Authorization: Bearer $MCP_BEARER_TOKEN" \
     -H "Content-Type: application/json" \
     --data-binary @-)
   
@@ -99,8 +108,8 @@ if [ -z "$EXISTING_ID" ]; then
   fi
 else
   echo "Updating existing workflow (ID: $EXISTING_ID)..."
-  UPDATE_RESPONSE=$(echo "$TRANSFORMED" | curl -sS -w "\nHTTP_STATUS:%{http_code}" -X PUT "$N8N_URL/api/v1/workflows/$EXISTING_ID" \
-    -H "X-N8N-API-KEY: $API_KEY" \
+  UPDATE_RESPONSE=$(echo "$TRANSFORMED" | curl -sS -w "\nHTTP_STATUS:%{http_code}" -X PUT "$API_URL/workflows/$EXISTING_ID" \
+    -H "Authorization: Bearer $MCP_BEARER_TOKEN" \
     -H "Content-Type: application/json" \
     --data-binary @-)
   
@@ -121,8 +130,8 @@ fi
 SHOULD_ACTIVATE=$(jq -r '.active // false' "$WORKFLOW_FILE")
 if [ "$SHOULD_ACTIVATE" = "true" ]; then
   echo "Activating workflow..."
-  ACTIVATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$N8N_URL/api/v1/workflows/$WORKFLOW_ID/activate" \
-    -H "X-N8N-API-KEY: $API_KEY" \
+  ACTIVATE_RESPONSE=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" -X POST "$API_URL/workflows/$WORKFLOW_ID/activate" \
+    -H "Authorization: Bearer $MCP_BEARER_TOKEN" \
     -H "Content-Type: application/json" \
     -d '{}')
   
