@@ -28,9 +28,18 @@ if [ -z "$NODES_COUNT" ] || [ "$NODES_COUNT" = "0" ] || [ "$NODES_COUNT" = "null
   exit 0
 fi
 
-if [ -z "$N8N_URL" ] || [ -z "$API_KEY" ]; then
-  echo "Error: N8N_BASE_URL/N8N_HOST and N8N_API_KEY must be set" >&2
-  exit 1
+
+# Check for required auth based on endpoint
+if [[ "$N8N_URL" == *mcp-server* ]] || [[ "$N8N_URL" == *mcp* ]]; then
+  if [ -z "$N8N_URL" ] || [ -z "$MCP_BEARER_TOKEN" ]; then
+    echo "Error: N8N_BASE_URL/N8N_HOST and MCP_BEARER_TOKEN must be set for MCP deployment" >&2
+    exit 1
+  fi
+else
+  if [ -z "$N8N_URL" ] || [ -z "$API_KEY" ]; then
+    echo "Error: N8N_BASE_URL/N8N_HOST and N8N_API_KEY must be set for standard n8n deployment" >&2
+    exit 1
+  fi
 fi
 
 
